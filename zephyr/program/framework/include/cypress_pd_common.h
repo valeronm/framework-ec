@@ -579,6 +579,13 @@ struct pd_port_current_state_t {
 	int safety_table[TYPEC_SAFETY_LEVEL_COUNT];
 	bool rdo_mismatch;
 	int max_operating_current;
+	/*
+	 * The partner's Discover Identity answer, which arrives at most once per
+	 * attachment; partner_id_valid is clear where none arrived.
+	 */
+	uint16_t partner_vid;
+	uint16_t partner_pid;
+	bool partner_id_valid;
 
 	enum pd_power_role power_role;
 	enum pd_data_role data_role;

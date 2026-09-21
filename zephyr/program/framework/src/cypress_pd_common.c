@@ -56,6 +56,9 @@ static bool firmware_update;
 static bool alert_press;
 static int pre_safety_level = TYPEC_SAFETY_LEVEL_0;
 
+/* Byte 2 of a received VDM carries the SOP type. */
+#define CCG_SOP_TYPE_SOP 0x00
+
 /**
  * Delay 500 ms to start updating the battery information
  */
@@ -1380,6 +1383,9 @@ static void clear_port_state(int controller, int port)
 	pd_port_states[port_idx].current = 0;
 	pd_port_states[port_idx].voltage = 0;
 	pd_port_states[port_idx].max_operating_current = 0;
+	pd_port_states[port_idx].partner_vid = 0;
+	pd_port_states[port_idx].partner_pid = 0;
+	pd_port_states[port_idx].partner_id_valid = false;
 }
 
 #ifdef CONFIG_CHARGER_HAS_VOLTAGE_REGULATOR
@@ -2103,6 +2109,27 @@ void cypd_handle_vdm(int controller, int port, uint8_t *data, int len)
 
 	if (!cypd_contoller_is_powered(controller))
 		return;
+
+	/*
+	 * Capture before the matching below, which returns on every VDM but a
+	 * Discover Identity answer from one of Framework's own accessories.
+	 */
+	if (len >= 20 && data[2] == CCG_SOP_TYPE_SOP) {
+		uint32_t vdm_hdr = UINT32_FROM_BYTE_ARRAY_LE(data, 4);
+		struct pd_port_current_state_t *state =
+			&pd_port_states[(controller << 1) + port];
+
+		if (PD_VDO_VID(vdm_hdr) == USB_SID_PD &&
+		    PD_VDO_CMD(vdm_hdr) == CMD_DISCOVER_IDENT &&
+		    PD_VDO_CMDT(vdm_hdr) == CMDT_RSP_ACK) {
+			state->partner_vid = PD_IDH_VID(UINT32_FROM_BYTE_ARRAY_LE(data, 8));
+			state->partner_pid =
+				PD_PRODUCT_PID(UINT32_FROM_BYTE_ARRAY_LE(data, 16));
+			state->partner_id_valid = true;
+			CPRINTS("P%d partner %04x:%04x", (controller << 1) + port,
+				state->partner_vid, state->partner_pid);
+		}
+	}
 
 	for (i = 0; i < sizeof(framework_vdm_hdr_match)/sizeof(struct match_vdm_header); i++) {
 		if (framework_vdm_hdr_match[i].idx >= len) {

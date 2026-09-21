@@ -512,6 +512,26 @@ static enum ec_status cmd_get_pd_port_state(struct host_cmd_handler_args *args)
 }
 DECLARE_HOST_COMMAND(EC_CMD_GET_PD_PORT_STATE, cmd_get_pd_port_state, EC_VER_MASK(0));
 
+static enum ec_status cmd_get_pd_partner_id(struct host_cmd_handler_args *args)
+{
+	const struct ec_params_get_pd_partner_id *p = args->params;
+	struct ec_response_get_pd_partner_id *r = args->response;
+
+	if (p->port >= PD_PORT_COUNT)
+		return EC_RES_INVALID_PARAM;
+
+	struct pd_port_current_state_t *pd = get_pd_port_states_array();
+
+	r->vid = pd[p->port].partner_vid;
+	r->pid = pd[p->port].partner_pid;
+	r->valid = pd[p->port].partner_id_valid;
+
+	args->response_size = sizeof(*r);
+
+	return EC_RES_SUCCESS;
+}
+DECLARE_HOST_COMMAND(EC_CMD_GET_PD_PARTNER_ID, cmd_get_pd_partner_id, EC_VER_MASK(0));
+
 static enum ec_status set_ap_reboot_delay(struct host_cmd_handler_args *args)
 {
 	const struct ec_response_ap_reboot_delay *p = args->params;
