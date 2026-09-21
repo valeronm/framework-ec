@@ -742,4 +742,21 @@ struct ec_params_led_pwm_control {
 	uint8_t pwm_b;
 } __ec_align1;
 
+/*****************************************************************************/
+/*
+ * Get the USB-IF vendor and product ids the port partner announced
+ */
+#define EC_CMD_GET_PD_PARTNER_ID 0x3E2C
+
+struct ec_params_get_pd_partner_id {
+	uint8_t port;
+} __ec_align1;
+
+struct ec_response_get_pd_partner_id {
+	uint16_t vid;
+	uint16_t pid;
+	/* Zero where the partner announced no identity, leaving the ids zero */
+	uint8_t valid;
+} __ec_align1;
+
 #endif /* __BOARD_HOST_COMMAND_H */
