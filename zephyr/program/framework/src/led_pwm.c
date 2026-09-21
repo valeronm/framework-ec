@@ -114,6 +114,22 @@ void led_set_color(enum led_color color, enum ec_led_id led_id)
 	}
 }
 
+void led_set_color_duty(enum led_color color, enum ec_led_id led_id, uint8_t duty)
+{
+	for (int i = 0; i < ARRAY_SIZE(pins_node); i++) {
+		if ((pins_node[i]->led_color == color) &&
+		    (pins_node[i]->led_id == led_id)) {
+			for (int j = 0; j < pins_node[i]->pins_count; j++) {
+				pins_node[i]->pwm_pins[j].pwm->pulse_ns =
+					DIV_ROUND_NEAREST(BOARD_LED_PWM_PERIOD_NS * duty, 100);
+				pins_node[i]->pwm_pins[j].pwm->transition =
+					LED_TRANSITION_STEP;
+			}
+			break;
+		}
+	}
+}
+
 const struct led_pins_node_t *led_get_node(enum led_color color, enum ec_led_id led_id)
 {
 	const struct led_pins_node_t *pin_node = NULL;

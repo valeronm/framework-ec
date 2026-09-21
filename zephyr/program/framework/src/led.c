@@ -565,6 +565,10 @@ static void led_tick(void)
 
 	if (chipset_in_state(CHIPSET_STATE_ANY_SUSPEND))
 		led_tick_time = 10;
+#ifndef CONFIG_PLATFORM_EC_FRAMEWORK_MINI_PC
+	else if (power_led_fn_lock_flashing())
+		led_tick_time = 100;
+#endif
 	else
 		led_tick_time = 200;
 

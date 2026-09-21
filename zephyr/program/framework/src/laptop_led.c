@@ -16,6 +16,7 @@
 #include "power.h"
 #include "power_sequence.h"
 #include "system.h"
+#include "timer.h"
 #include "util.h"
 
 #ifdef CONFIG_PLATFORM_EC_FRAMEWORK_LAPTOP_16
@@ -26,6 +27,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
 
 const enum ec_led_id supported_led_ids[] = { EC_LED_ID_BATTERY_LED,
 					     EC_LED_ID_POWER_LED };
@@ -109,9 +111,74 @@ bool multifunction_leds_control(void)
 	return false;
 }
 
+#define FN_LOCK_FLASH_SLOT_US (100 * MSEC)
+
+/* The keyboard task's last request, 1 + the lock state, until the LED tick takes it. */
+static atomic_t fn_lock_flash_request;
+
+/*
+ * The flash showing since fn_lock_flash_start, in slots: bright, bright, set
+ * level, bright, bright for locked, and the first two for unlocked; 0 for none.
+ */
+static int fn_lock_flash_slots;
+static timestamp_t fn_lock_flash_start;
+
+void power_led_signal_fn_lock(bool locked)
+{
+	atomic_set(&fn_lock_flash_request, 1 + locked);
+}
+
+bool power_led_fn_lock_flashing(void)
+{
+	return fn_lock_flash_slots != 0;
+}
+
+/* The flash slot due now, or -1 where no flash is showing. */
+static int fn_lock_flash_slot(void)
+{
+	atomic_val_t request = atomic_clear(&fn_lock_flash_request);
+	int slot;
+
+	if (request) {
+		bool locked = request - 1;
+
+		fn_lock_flash_start = get_time();
+		fn_lock_flash_slots = locked ? 5 : 2;
+	}
+
+	if (fn_lock_flash_slots == 0)
+		return -1;
+
+	slot = (get_time().val - fn_lock_flash_start.val) / FN_LOCK_FLASH_SLOT_US;
+	if (slot >= fn_lock_flash_slots) {
+		fn_lock_flash_slots = 0;
+		return -1;
+	}
+
+	return slot;
+}
+
+static void fn_lock_flash_bright(void)
+{
+	uint8_t level;
+	int duty = 100;
+
+	/*
+	 * FP_LED_HIGH is the preset ceiling, from where only full duty is brighter,
+	 * and an unset level of 0 stands for it.
+	 */
+	if (system_get_bbram(SYSTEM_BBRAM_IDX_FP_LED_LEVEL, &level) == EC_SUCCESS &&
+	    level != 0 && level < FP_LED_HIGH)
+		duty = FP_LED_HIGH;
+
+	led_set_color_duty(LED_WHITE, EC_LED_ID_POWER_LED, duty);
+}
+
 bool power_button_led_control(void)
 {
 	int colors[3] = {LED_OFF, LED_OFF, LED_OFF};
+	/* Taken before the returns below, so a flash they hide still expires. */
+	int flash_slot = fn_lock_flash_slot();
 
 	/* In facotry mode, don't control led */
 	if (!led_auto_control_is_enabled(EC_LED_ID_POWER_LED))
@@ -120,6 +187,14 @@ bool power_button_led_control(void)
 	/* Turn off fingerprint LED when lid is closed */
 	if (!IS_ENABLED(CONFIG_PLATFORM_EC_TABLET_MODE) && !lid_is_open()) {
 		led_set_color(LED_OFF, EC_LED_ID_POWER_LED);
+		return true;
+	}
+
+	if (flash_slot >= 0) {
+		if (flash_slot == 2)
+			led_set_color(LED_WHITE, EC_LED_ID_POWER_LED);
+		else
+			fn_lock_flash_bright();
 		return true;
 	}
 
