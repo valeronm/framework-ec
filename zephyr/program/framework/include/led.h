@@ -176,6 +176,12 @@ struct led_pattern_node_t {
 void led_set_color(enum led_color color, enum ec_led_id led_id);
 
 /**
+ * Set LED color at duty percent on each of its pins, in place of the duty its
+ * node carries.
+ */
+void led_set_color_duty(enum led_color color, enum ec_led_id led_id, uint8_t duty);
+
+/**
  * Set LED color using pattern node
  *
  * @param *pins_node	Pins node to enable the color corresponding
@@ -217,9 +223,21 @@ extern bool multifunction_leds_control(void);
 /**
  * Control the power button led feature for Laptop projects
  * [1] Close lid - turn off the power button led (13 inch-project)
- * [2] Battery low percentage - LED blinks white/off
+ * [2] Fn lock toggled - LED flashes brighter, twice for locked, once for unlocked
+ * [3] Battery low percentage - LED blinks white/off
  */
 extern bool power_button_led_control(void);
+
+/**
+ * Flash the power button led to show the Fn lock state just set.
+ * Safe to call from any task; a call during a flash restarts it.
+ */
+void power_led_signal_fn_lock(bool locked);
+
+/**
+ * Whether an Fn lock flash is showing, as of the last power_button_led_control().
+ */
+bool power_led_fn_lock_flashing(void);
 #endif
 
 int fp_led_auto_is_enable(void);

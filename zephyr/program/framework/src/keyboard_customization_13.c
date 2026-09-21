@@ -399,6 +399,7 @@ int functional_hotkey(uint16_t *key_code, int8_t pressed)
 					Fn_key &= ~FN_LOCKED;
 				else
 					Fn_key |= FN_LOCKED;
+				power_led_signal_fn_lock(Fn_key & FN_LOCKED);
 			}
 			return EC_ERROR_UNIMPLEMENTED;
 		}
