@@ -1,0 +1,4 @@
+# Framework's shipped images, as image_hashes.py prints them for a dump of
+# the flash: project, commit, the target it builds on, RO and RW sha256.
+sakura cf48815511282208125379f5f385be85ccc8837f sakura-20260429 6185bd6325839e3eaef762e6062a63613bacfe818274848a030428f3bb9a65ed c9f5e1c31c8c34e70293fee8cb0ed2bc33676fa61921b68dfcbc070d6cca9795
+sakura 34ebc9340890b6b15d0ff1c31c7be8b7bfe9070b sakura-20260429 a9abb1cc56a81feda69a183f297dc3e2b770bb162f40bc2645c298c6a80affb2 cb6611f6e537796b84bfab0732c055df05efaed92867d01381750876b3ecd5af

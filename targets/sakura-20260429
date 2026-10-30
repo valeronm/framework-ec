@@ -1,0 +1,11 @@
+# Framework's Zephyr snapshot for sakura, and the toolchain and modules its
+# releases build with. The coreboot-sdk paths are under the public
+# chromiumos-sdk bucket's toolchains/.
+ZEPHYR_COMMIT=8bdbcbbbe6bfecf4067379e9eae146c6d01c7f64
+CMSIS_COMMIT=ada89e4063a02bf12797415ebab9d21f0cfaeef1
+NANOPB_COMMIT=54a8f364e39bf21e2c5fd3ee7e36557f8b2f6da5
+CRYPTOC_COMMIT=0dd679081b9c8bfa2583d74e3a17a413709ea362
+SDK_ARM=coreboot-sdk-arm-eabi/14.2.0-r10/c0f6fc997d7315a8f0f6109952ff983e78e0d2e3.tar.zst
+SDK_ARM_SHA256=2447dfa30210725283f738eed8d03fd51b34143419903e80b79a5e7a20e405e8
+SDK_PICOLIBC=coreboot-sdk-picolibc-arm-eabi/14.2.0-r6/9a33251b15fd85ef2035b2b92c72a7a20e7e55a8.tar.zst
+SDK_PICOLIBC_SHA256=c4f2f78ff454cd219a86676eea81ce3deb66a34c30df17298768ad7a6fffccfd
