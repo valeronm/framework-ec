@@ -2,20 +2,21 @@
 # Builds an EC checkout in the pinned environment of one target in targets/,
 # with podman or docker, and prints the path of its ec.bin.
 #
-#   build.sh --target <target> [--repro] <checkout> <project>
+#   build.sh --target <target> [--repro] [--dirty] <checkout> <project>
 #
 # --repro stamps the build with Framework's build user and host, as a
 # shipped image carries; without it the stamp is this machine's, so a local
-# image cannot pass for theirs. An untracked or changed file in the checkout
-# appends `+` to the version string, which moves every byte after it.
+# image cannot pass for theirs. A checkout with changed or untracked files
+# is refused unless --dirty is given.
 set -euo pipefail
 
-usage() { echo "usage: $0 --target <target> [--repro] <checkout> <project>" >&2; exit 2; }
-target= repro=0
+usage() { echo "usage: $0 --target <target> [--repro] [--dirty] <checkout> <project>" >&2; exit 2; }
+target= repro=0 dirty=0
 while [ $# -gt 0 ]; do
 	case $1 in
 	--target) target=${2:-}; shift 2 ;;
 	--repro) repro=1; shift ;;
+	--dirty) dirty=1; shift ;;
 	-*) usage ;;
 	*) break ;;
 	esac
@@ -26,6 +27,13 @@ pins=$here/targets/$target
 [ -f "$pins" ] || { echo "no target $target in $here/targets" >&2; exit 1; }
 checkout=$(cd "$1" && pwd)
 project=$2
+
+# zmake's own test for a dirty tree, which appends `+` to the version string
+# and so moves every byte after it.
+if [ $dirty -eq 0 ] && [ -n "$(git -C "$checkout" ls-files --modified -o --exclude-standard)" ]; then
+	echo "$checkout has changed or untracked files; --dirty builds it anyway" >&2
+	exit 1
+fi
 
 # The release number lives only in the CI matrix, which each version bump edits.
 version=$(sed -n "s/.*{ name: $project,.* ver: \"\([^\"]*\)\".*/\1/p" \
